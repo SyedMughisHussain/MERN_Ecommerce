@@ -1,4 +1,6 @@
 import mongoose, { Schema } from "mongoose";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken"
 
 const userSchema = new Schema(
   {
@@ -17,7 +19,6 @@ const userSchema = new Schema(
     },
     isAdmin: {
       type: Boolean,
-      required: true,
       default: false,
     },
   },
@@ -26,6 +27,26 @@ const userSchema = new Schema(
   }
 );
 
-const User = mongoose.model("User", userSchema);
+userSchema.pre("save", function (next) {
+  if (!this.isModified("password")) {
+    return next();
+  }
 
-export default User;
+  const salt = bcrypt.genSaltSync(10);
+  const hash = bcrypt.hashSync(this.password, salt);
+  this.password = hash;
+
+  next();
+});
+
+userSchema.methods.matchPassword = function (password) {
+  return bcrypt.compareSync(password, this.password);
+};
+
+userSchema.methods.generateAccessToken = function () {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE,
+  });
+}
+
+export const User = mongoose.model("User", userSchema);
