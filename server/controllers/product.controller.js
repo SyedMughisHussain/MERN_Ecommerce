@@ -1,9 +1,15 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+
+import Product from "../models/product.model.js";
 
 const addProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, category, countInStock } = req.body;
+  console.log(req.file.path);
 
-  if (!name || !price || !description || !category || !countInStock) {
+  const { name, price, description, categoryId, countInStock } = req.body;
+
+  if (!name || !price || !description || !categoryId || !countInStock) {
     throw new ApiError(400, "All fields are required.");
   }
 
@@ -13,8 +19,32 @@ const addProduct = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Product already exists.");
   }
 
-  
+  const imageLocalPath = req.file.path;
 
+  if (!imageLocalPath) {
+    throw new ApiError(400, "Image is required.");
+  }
+
+  const image = await uploadOnCloudinary(imageLocalPath);
+
+  if (!image) {
+    throw new ApiError(400, "Image is required.");
+  }
+
+  const product = await Product.create({
+    name,
+    price,
+    description,
+    image: image.url,
+    categoryId,
+    countInStock,
+  });
+
+  return res.status(201).json({
+    status: "success",
+    product,
+    message: "Product added successfully",
+  });
 });
 
 export { addProduct };
