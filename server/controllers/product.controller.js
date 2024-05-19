@@ -47,4 +47,69 @@ const addProduct = asyncHandler(async (req, res) => {
   });
 });
 
-export { addProduct };
+const getAllProducts = asyncHandler(async (req, res) => {
+  const products = await Product.find();
+  return res.status(200).json({
+    status: "success",
+    results: products.length,
+    products,
+  });
+});
+
+const getSingleProduct = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+
+  if (!product) {
+    throw new ApiError(404, "Product not found.");
+  }
+
+  return res.status(200).json({
+    status: "success",
+    product,
+  });
+});
+
+const editProduct = asyncHandler(async (req, res) => {
+  const { name, price, description, categoryId, countInStock } = req.body;
+
+  if (!name || !price || !description || !categoryId || !countInStock) {
+    throw new ApiError(400, "All fields are required.");
+  }
+
+  const product = await Product.findByIdAndUpdate(
+    req.params.id,
+    {
+      name,
+      price,
+      description,
+      categoryId,
+      countInStock,
+    },
+    {
+      new: true,
+    }
+  );
+
+  return res.status(200).json({
+    status: "success",
+    product,
+    message: "Product updated successfully",
+  });
+});
+
+const deleteProduct = asyncHandler(async (req, res) => {
+  const product = await Product.findByIdAndDelete(req.params.id);
+  return res.status(200).json({
+    status: "success",
+    deleteProduct: product,
+    message: "Product deleted successfully",
+  });
+});
+
+export {
+  addProduct,
+  getAllProducts,
+  getSingleProduct,
+  editProduct,
+  deleteProduct,
+};
